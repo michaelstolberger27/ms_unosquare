@@ -1,0 +1,393 @@
+{
+	"info": {
+		"_postman_id": "worldcup-2026-travel-planner",
+		"name": "World Cup 2026 Travel Planner API",
+		"description": "API collection for testing the World Cup 2026 Travel Route Planner endpoints.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3008",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/api/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "health"]
+				},
+				"description": "Verify the API is running."
+			}
+		},
+		{
+			"name": "Cities",
+			"item": [
+				{
+					"name": "Get All Cities",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/cities",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "cities"]
+						},
+						"description": "Returns all 16 host cities.\n\nExpected response: Array of city objects with id, name, country, latitude, longitude, stadium."
+					}
+				}
+			]
+		},
+		{
+			"name": "Matches",
+			"item": [
+				{
+					"name": "Get All Matches",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/matches",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "matches"]
+						},
+						"description": "Returns all matches ordered by kickoff date.\n\nExpected response: Array of match objects with homeTeam, awayTeam, city (full objects), kickoff, group, matchDay."
+					}
+				},
+				{
+					"name": "Get Matches by City",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/matches?city=city-atlanta",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "matches"],
+							"query": [
+								{
+									"key": "city",
+									"value": "city-atlanta"
+								}
+							]
+						},
+						"description": "Filter matches by city ID.\n\nTry different city IDs: city-atlanta, city-mexico-city, city-toronto, etc."
+					}
+				},
+				{
+					"name": "Get Matches by Date",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/matches?date=2026-06-14",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "matches"],
+							"query": [
+								{
+									"key": "date",
+									"value": "2026-06-14"
+								}
+							]
+						},
+						"description": "Filter matches by date (YYYY-MM-DD format)."
+					}
+				},
+				{
+					"name": "Get Matches by City and Date",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/matches?city=city-atlanta&date=2026-06-14",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "matches"],
+							"query": [
+								{
+									"key": "city",
+									"value": "city-atlanta"
+								},
+								{
+									"key": "date",
+									"value": "2026-06-14"
+								}
+							]
+						},
+						"description": "Filter matches by both city and date."
+					}
+				},
+				{
+					"name": "Get Match by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/matches/match-1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "matches", "match-1"]
+						},
+						"description": "Get a single match by ID.\n\nReturns 404 if not found."
+					}
+				}
+			]
+		},
+		{
+			"name": "Route Optimisation",
+			"item": [
+				{
+					"name": "Optimise Route",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"matchIds\": [\"match-1\", \"match-5\", \"match-12\", \"match-20\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/optimise",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "optimise"]
+						},
+						"description": "Optimise travel route for selected matches.\n\nRequest body: { \"matchIds\": [\"match-1\", \"match-5\", ...] }\n\nExpected response: { stops: [...], totalDistance: number, strategy: string }"
+					}
+				},
+				{
+					"name": "Optimise Route (Large Selection)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"matchIds\": [\"match-1\", \"match-2\", \"match-3\", \"match-4\", \"match-5\", \"match-6\", \"match-7\", \"match-8\"]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/optimise",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "optimise"]
+						},
+						"description": "Test route optimisation with a larger selection of matches.\n\nCompare totalDistance between DateOnlyStrategy and NearestNeighbourStrategy."
+					}
+				}
+			]
+		},
+		{
+			"name": "Budget Planner",
+			"item": [
+				{
+					"name": "Budget Route (Within Budget)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"budget\": 5000.00,\n    \"matchIds\": [\"match-1\", \"match-7\", \"match-13\", \"match-25\", \"match-37\"],\n    \"originCityId\": \"city-atlanta\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/budget",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "budget"]
+						},
+						"description": "Plan a budget-constrained trip.\n\nRequest body:\n- budget: Maximum budget in USD\n- matchIds: Array of match IDs to attend\n- originCityId: City where the trip starts\n\nExpected response:\n- feasible: true/false\n- route: Optimised route (if feasible)\n- costBreakdown: { flights, accommodation, tickets, total }\n- countriesVisited: Array of countries covered\n- missingCountries: Countries not covered (must include USA, Mexico, Canada)\n- minimumBudgetRequired: Actual cost if over budget\n- suggestions: Cost-saving recommendations"
+					}
+				},
+				{
+					"name": "Budget Route (Over Budget)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"budget\": 1500.00,\n    \"matchIds\": [\"match-1\", \"match-7\", \"match-13\", \"match-25\", \"match-37\"],\n    \"originCityId\": \"city-atlanta\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/budget",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "budget"]
+						},
+						"description": "Test budget planner with insufficient budget.\n\nExpected: feasible=false with minimumBudgetRequired and suggestions."
+					}
+				},
+				{
+					"name": "Budget Route (Missing Countries)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"budget\": 5000.00,\n    \"matchIds\": [\"match-3\", \"match-4\", \"match-5\"],\n    \"originCityId\": \"city-atlanta\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/budget",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "budget"]
+						},
+						"description": "Test budget planner with matches that don't cover all 3 countries.\n\nConstraint: User MUST attend at least 1 match in USA, Mexico, AND Canada.\n\nExpected: feasible=false with missingCountries listing countries to add."
+					}
+				},
+				{
+					"name": "Budget Route (All Countries, Large Budget)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"budget\": 10000.00,\n    \"matchIds\": [\"match-1\", \"match-5\", \"match-9\", \"match-13\", \"match-17\", \"match-21\", \"match-25\", \"match-29\"],\n    \"originCityId\": \"city-houston\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/budget",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "budget"]
+						},
+						"description": "Test budget planner with generous budget and many matches.\n\nUseful for verifying cost calculations are working correctly."
+					}
+				}
+			]
+		},
+		{
+			"name": "Best Value Finder (Bonus)",
+			"item": [
+				{
+					"name": "Find Best Value",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"budget\": 5000.00,\n    \"originCityId\": \"city-atlanta\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/best-value",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "best-value"]
+						},
+						"description": "BONUS CHALLENGE: Find the best combination of matches within budget.\n\nRequest body:\n- budget: Maximum budget in USD\n- originCityId: City where the trip starts\n\nExpected response:\n- withinBudget: true/false\n- matches: Array of selected matches\n- route: Optimised travel route\n- costBreakdown: { flights, accommodation, tickets, total }\n- countriesVisited: Array of countries covered\n- matchCount: Number of matches selected\n- message: Description of the result\n\nConstraints:\n- Must include at least 1 match in each country (USA, Mexico, Canada)\n- Minimum 5 matches required\n- Maximise number of matches within budget"
+					}
+				},
+				{
+					"name": "Find Best Value (Low Budget)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"budget\": 2500.00,\n    \"originCityId\": \"city-mexico-city\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/best-value",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "best-value"]
+						},
+						"description": "Test best value finder with a lower budget.\n\nShould still find at least 5 matches covering all 3 countries if possible."
+					}
+				},
+				{
+					"name": "Find Best Value (High Budget)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"budget\": 15000.00,\n    \"originCityId\": \"city-houston\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/route/best-value",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "route", "best-value"]
+						},
+						"description": "Test best value finder with a generous budget.\n\nExpected: More matches selected while staying within budget."
+					}
+				}
+			]
+		},
+		{
+			"name": "Itineraries",
+			"item": [
+				{
+					"name": "Save Itinerary",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"strategy\": \"nearest-neighbour\",\n    \"totalDistance\": 1234.56,\n    \"stops\": [\n        {\n            \"stopNumber\": 1,\n            \"matchId\": \"match-1\",\n            \"cityId\": \"city-atlanta\",\n            \"distanceFromPrevious\": 0\n        },\n        {\n            \"stopNumber\": 2,\n            \"matchId\": \"match-5\",\n            \"cityId\": \"city-miami\",\n            \"distanceFromPrevious\": 1234.56\n        }\n    ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/itineraries",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "itineraries"]
+						},
+						"description": "Save an optimised route as an itinerary.\n\nExpected response: { id: string } with 201 Created status."
+					}
+				},
+				{
+					"name": "Get Itinerary by ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/itineraries/{{itineraryId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "itineraries", "{{itineraryId}}"]
+						},
+						"description": "Retrieve a saved itinerary by ID.\n\nReplace {{itineraryId}} with the ID returned from Save Itinerary.\n\nReturns 404 if not found."
+					}
+				}
+			]
+		}
+	]
+}

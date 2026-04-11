@@ -1,0 +1,11 @@
+{
+  "profiles": {
+    "WorldCup.Api": {
+      "commandName": "Project",
+      "applicationUrl": "http://localhost:3008",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  }
+}
