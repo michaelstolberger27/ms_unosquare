@@ -29,7 +29,23 @@ matches_bp = Blueprint('matches', __name__)
 @matches_bp.route('', methods=['GET'])
 def get_matches():
     # TODO: Replace with your implementation (YOUR TASK #2)
-    return jsonify([]), 200
+    #
+    # Filtering city_id with == is an exact match on the city's primary key.
+    # Filtering by date uses LIKE with a prefix (e.g. "2026-06-14%") because kickoff
+    # is stored as a full ISO datetime string; this avoids parsing every row in Python.
+    # Results are ordered by kickoff so the frontend receives them chronologically.
+    query = Match.query
+    city = request.args.get('city')
+    date = request.args.get('date')
+
+    if city:
+        query = query.filter(Match.city_id == city)
+    if date:
+        # kickoff is stored as ISO string e.g. "2026-06-14T18:00:00"
+        query = query.filter(Match.kickoff.like(f'{date}%'))
+
+    matches = query.order_by(Match.kickoff).all()
+    return jsonify([m.to_dict() for m in matches]), 200
 
 
 # ============================================================
@@ -46,4 +62,11 @@ def get_matches():
 @matches_bp.route('/<id>', methods=['GET'])
 def get_match_by_id(id):
     # TODO: Replace with your implementation (YOUR TASK #2)
-    return jsonify({}), 200
+    #
+    # Match.query.get() looks up by primary key — faster than filter() for single rows.
+    # Returning 404 with a descriptive error body makes it easier for API consumers
+    # to distinguish "not found" from a server error.
+    match = Match.query.get(id)
+    if not match:
+        return jsonify({'error': 'Match not found'}), 404
+    return jsonify(match.to_dict()), 200
