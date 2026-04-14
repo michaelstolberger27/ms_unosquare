@@ -27,19 +27,57 @@ class NearestNeighbourStrategy(RouteStrategy):
         #       to your current position (use calculate_distance)
         # 5. Track your "current city" as you go — update it after each match
         # 6. Return build_route(ordered_matches, 'nearest-neighbour')
-        #
-        # Helper you'll need:
-        #   calculate_distance(lat1, lon1, lat2, lon2) → returns distance in km
-        #
-        # Example:
-        #   dist = calculate_distance(
-        #       current_city['latitude'], current_city['longitude'],
-        #       candidate['city']['latitude'], candidate['city']['longitude']
-        #   )
-        #
-        # Tips:
-        # - You can use itertools.groupby or a dict to group by date
-        # - Don't forget to handle the case where there's only one match on a day
-        # - The first match in chronological order should always be your starting point
 
-        raise NotImplementedError("Not implemented — this is your task!")
+        # Early exit: an empty selection produces an empty route with zero distance.
+        if not matches:
+            return build_route([], 'nearest-neighbour')
+
+        # Step 1: Sort by kickoff date.
+        # ISO-8601 strings sort lexicographically, so plain string comparison works.
+        sorted_matches = sorted(matches, key=lambda m: m['kickoff'])
+
+        # Step 2: Group matches by calendar date (YYYY-MM-DD).
+        # Stripping the time component lets us treat all matches on the same day
+        # as a single decision point — which city should we travel to that day?
+        groups: dict[str, list] = {}
+        for match in sorted_matches:
+            date = match['kickoff'].split('T')[0]
+            groups.setdefault(date, []).append(match)
+
+        ordered_dates = sorted(groups.keys())
+        ordered_matches = []
+
+        # Step 3: The first match is our starting position.
+        # When multiple matches share the earliest date we have no prior location to
+        # compare distances from, so we default to the first one in sort order.
+        # Trade-off: a smarter approach could try all first-day candidates as seeds
+        # and pick the global shortest route, but that would be O(n²) at best.
+        first_day = groups[ordered_dates[0]]
+        current_match = first_day[0]
+        ordered_matches.append(current_match)
+
+        # Steps 4 & 5: Greedy nearest-neighbour selection.
+        # For each day after the first, compare every candidate's city to our current
+        # position using the Haversine formula and pick the closest one.
+        # This is a greedy heuristic — it minimises each individual hop but does not
+        # guarantee a globally optimal route.
+        for date in ordered_dates[1:]:
+            candidates = groups[date]
+            current_city = current_match['city']
+
+            if len(candidates) == 1:
+                # No choice to make — only one match that day.
+                current_match = candidates[0]
+            else:
+                current_match = min(
+                    candidates,
+                    key=lambda m: calculate_distance(
+                        current_city['latitude'], current_city['longitude'],
+                        m['city']['latitude'], m['city']['longitude']
+                    )
+                )
+            ordered_matches.append(current_match)
+
+        # build_route calculates the distance between each consecutive stop and
+        # packages everything into the OptimisedRoute shape expected by the API.
+        return build_route(ordered_matches, 'nearest-neighbour')
