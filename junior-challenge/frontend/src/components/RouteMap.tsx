@@ -144,11 +144,23 @@ function RouteMap({ route, originCity }: RouteMapProps) {
                   TODO: Render match details for each stop (YOUR TASK)
                   ============================================================
 
-                  CSS classes to use:
-                    - <div className="popup-match"> for each match
-                    - <span className="popup-match-number"> for stop number
-                    - <span className="popup-match-date"> for the date
+                  We iterate over all stops grouped to this city marker.
+                  Each stop shows its number, the fixture (home vs away),
+                  and the formatted kickoff date.
+                  Using the provided CSS classes keeps styling consistent
+                  with the rest of the application.
               */}
+              {stops.map((stop) => (
+                <div key={stop.match.id} className="popup-match">
+                  <span className="popup-match-number">#{stop.stopNumber}</span>
+                  {' '}
+                  {stop.match.homeTeam.name} vs {stop.match.awayTeam.name}
+                  <br />
+                  <span className="popup-match-date">
+                    {new Date(stop.match.kickoff).toLocaleDateString()}
+                  </span>
+                </div>
+              ))}
             </Popup>
           </Marker>
         );
