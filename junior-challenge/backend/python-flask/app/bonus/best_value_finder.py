@@ -94,7 +94,84 @@ class BestValueFinder:
         #    - matchCount: number of matches
         #    - message: description of result
 
-        raise NotImplementedError("Not implemented — this is a bonus challenge!")
+        # ── Step 1: Guarantee one match per required country ──────────────────
+        # We pick the cheapest match from each country first to ensure country
+        # coverage before spending budget on additional matches.
+        matches_by_country = self.get_matches_by_country(all_matches)
+
+        selected = []
+        for country in self.REQUIRED_COUNTRIES:
+            if country not in matches_by_country:
+                return BestValueResult(
+                    withinBudget=False,
+                    matches=[],
+                    route=None,
+                    costBreakdown={'flights': 0, 'accommodation': 0, 'tickets': 0, 'total': 0},
+                    countriesVisited=[],
+                    matchCount=0,
+                    message=f"No matches available in {country} — cannot meet country requirement."
+                )
+            cheapest_in_country = min(matches_by_country[country], key=lambda m: m['ticketPrice'])
+            selected.append(cheapest_in_country)
+
+        # Bail early if even the cheapest 3-country selection exceeds budget
+        base_cost = self.calculate_trip_cost(selected, origin_city_id, flight_prices)
+        if base_cost > budget:
+            return BestValueResult(
+                withinBudget=False,
+                matches=selected,
+                route=None,
+                costBreakdown={'flights': 0, 'accommodation': 0, 'tickets': 0, 'total': round(base_cost, 2)},
+                countriesVisited=self.REQUIRED_COUNTRIES,
+                matchCount=len(selected),
+                message=f"Budget too low. Minimum required for 3-country coverage: ${base_cost:.2f}"
+            )
+
+        # ── Step 2 & 3: Greedily add cheapest remaining matches ───────────────
+        # We recalculate the full trip cost (not just ticket price) each time
+        # because adding a match in a new city also adds flight and accommodation.
+        selected_ids = {m['id'] for m in selected}
+        remaining = sorted(
+            [m for m in all_matches if m['id'] not in selected_ids],
+            key=lambda m: m['ticketPrice']
+        )
+
+        for match in remaining:
+            candidate = selected + [match]
+            if self.calculate_trip_cost(candidate, origin_city_id, flight_prices) <= budget:
+                selected = candidate
+
+        # ── Step 4: Enforce minimum 5 matches ────────────────────────────────
+        if len(selected) < 5:
+            total = self.calculate_trip_cost(selected, origin_city_id, flight_prices)
+            return BestValueResult(
+                withinBudget=False,
+                matches=selected,
+                route=None,
+                costBreakdown={'flights': 0, 'accommodation': 0, 'tickets': 0, 'total': round(total, 2)},
+                countriesVisited=list({m['city']['country'] for m in selected}),
+                matchCount=len(selected),
+                message=f"Only {len(selected)} match(es) fit within ${budget} budget. Minimum 5 required."
+            )
+
+        # ── Step 5: Build optimised route and detailed cost breakdown ─────────
+        # Imports are here to avoid circular imports at module level
+        from app.strategies.nearest_neighbour_strategy import NearestNeighbourStrategy
+        from app.utils.cost_calculator import CostCalculator
+
+        route = NearestNeighbourStrategy().optimise(selected)
+        cost_result = CostCalculator().calculate(selected, budget, origin_city_id, flight_prices)
+        countries_visited = list({m['city']['country'] for m in selected})
+
+        return BestValueResult(
+            withinBudget=cost_result['costBreakdown']['total'] <= budget,
+            matches=selected,
+            route=route,
+            costBreakdown=cost_result['costBreakdown'],
+            countriesVisited=countries_visited,
+            matchCount=len(selected),
+            message=f"Found {len(selected)} matches within your ${budget:.0f} budget."
+        )
 
     # ============================================================
     # HELPER METHODS (Already implemented for you)
