@@ -25,7 +25,12 @@ cities_bp = Blueprint('cities', __name__)
 #
 # ============================================================
 
-@cities_bp.route('/')
+@cities_bp.route('')
 def get_all():
     # TODO: Replace with your implementation (YOUR TASK #1)
-    return jsonify()
+    #
+    # City.query.all() fetches every row from the cities table via SQLAlchemy.
+    # to_dict() maps each ORM object to a plain dict so Flask's jsonify can
+    # serialise it — ORM objects themselves are not JSON-serialisable.
+    cities = City.query.all()
+    return jsonify([city.to_dict() for city in cities])
